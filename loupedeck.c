@@ -8,8 +8,6 @@
 #include <assert.h>
 #include "loupedeck.h"
 
-#include <stdio.h>
-
 #define DEV_SERIAL "/dev/serial/by-id"
 #define LOUPEDECK "usb-Loupedeck"
 
@@ -133,9 +131,13 @@ loupedeck_t ld_create(const char *pattern)
     "Upgrade: websocket\n"
     "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\n\n", 109);
 
-  // dismiss 133 bytes
-  uint8_t buffer[133];
-  ld_receive(fd, &buffer, 133);
+  uint8_t buffer[129];
+  ld_receive(fd, &buffer, 129); // dismiss 129 bytes startup
+  if (buffer[0] == 0x88
+    && buffer[1] == 0x02
+    && buffer[2] == 0x03
+    && buffer[3] == 0xe8) // restart
+    ld_receive(fd, &buffer, 4); // 4 extra bytes at the beginning - catch up
 
   return fd;
 }
