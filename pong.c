@@ -1,10 +1,9 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
 #include "loupedeck.h"
 #include "image.h"
-
-#include <stdio.h>
 
 #define PADDLE_WIDTH 5
 #define PADDLE_HEIGHT 40
@@ -12,6 +11,9 @@
 #define CENTER_X 238
 #define CENTER_Y 135
 #define BALL 5
+#define SPEED 1.5
+#define EFFECT 1.2
+#define FRICTION 0.85
 
 int main()
 {
@@ -28,13 +30,13 @@ int main()
   ld_backlight_level(ld, 3);
   
   ld_button_color(ld, 0, red, green, blue);
-  image_t splash = img_create(480, 270, 0, 0, 0);
+  image_t splash = img_create(LD_SCREEN_WIDTH, LD_SCREEN_HEIGHT, 0, 0, 0);
 
-  img_print_text(splash, 215, 40, "PONG!", red, green, blue);
-  img_print_text(splash, 25, 25, "< left", red, green, blue);
-  img_print_text(splash, 25, 140, "< right", red, green, blue);
-  img_print_text(splash, 25, 250, "< start", red, green, blue);
-  img_print_text(splash, 400, 250, "exit >", red, green, blue);
+  img_print_text(splash, 200, 40, "PONG!", red, green, blue);
+  img_print_text(splash, 5, 15, "< left", red, green, blue);
+  img_print_text(splash, 5, 140, "< right", red, green, blue);
+  img_print_text(splash, 5, 230, "< start", red, green, blue);
+  img_print_text(splash, 380, 230, "exit >", red, green, blue);
   ld_send_image(ld, 0, 0, splash->width, splash->height, splash->pixels);
   img_free(splash);
   ld_update_screen(ld);
@@ -48,10 +50,12 @@ int main()
       goto EXIT;
   }
 
-  image_t black = img_create(480, 270, 0, 0, 0);
+  image_t black = img_create(LD_SCREEN_WIDTH, LD_SCREEN_HEIGHT, 0, 0, 0);
 
-  image_t paddle = img_create(PADDLE_WIDTH, PADDLE_HEIGHT + 2 * PADDLE_STEP, 0, 0, 0);
-  img_draw_rectangle(paddle, 0, PADDLE_STEP, PADDLE_WIDTH, PADDLE_HEIGHT, red, green, blue);
+  image_t paddle = img_create(PADDLE_WIDTH, PADDLE_HEIGHT + 2 * PADDLE_STEP,
+    0, 0, 0);
+  img_draw_rectangle(paddle, 0, PADDLE_STEP, PADDLE_WIDTH, PADDLE_HEIGHT,
+    red, green, blue);
 
   image_t ball = img_create(3 * BALL, 3 * BALL, 0, 0, 0);
   img_draw_rectangle(ball, BALL, BALL, BALL, BALL, red, green, blue);
@@ -73,9 +77,10 @@ int main()
 
     ld_send_image(ld, (int)ball_x - BALL, (int)ball_y - BALL,
       ball->width, ball->height, ball->pixels);
-    ld_send_image(ld, 19 + 5, left_y - PADDLE_STEP,
+    ld_send_image(ld, 20, left_y - PADDLE_STEP,
       paddle->width, paddle->height, paddle->pixels);
-    ld_send_image(ld, 458 - 5 - PADDLE_WIDTH, right_y - PADDLE_STEP,
+    ld_send_image(ld, LD_SCREEN_WIDTH - 20 - PADDLE_WIDTH,
+      right_y - PADDLE_STEP,
       paddle->width, paddle->height, paddle->pixels);
     ld_update_screen(ld);
 
@@ -89,11 +94,11 @@ int main()
     }
     ld_button_color(ld, 0, 0, 0, 0);
 
-    float ball_dx = 0.05;
+    float ball_dx = 0.1 * SPEED;
     if (rand() & 1)
       ball_dx = -ball_dx;
 
-    float ball_dy = (rand() % 21 - 10) * 0.01;
+    float ball_dy = (rand() % 21 - 10) * 0.01 * SPEED;
 
     while (1)
     {
@@ -121,11 +126,11 @@ int main()
 	}
       if (left_d < 0 && left_y > 5)
 	left_y -= PADDLE_STEP;
-      if (left_d > 0 && left_y < 264 - PADDLE_HEIGHT)
+      if (left_d > 0 && left_y < LD_SCREEN_HEIGHT - 5 - PADDLE_HEIGHT)
 	left_y += PADDLE_STEP;
       if (right_d < 0 && right_y > 5)
 	right_y -= PADDLE_STEP;
-      if (right_d > 0 && right_y < 264 - PADDLE_HEIGHT)
+      if (right_d > 0 && right_y < LD_SCREEN_HEIGHT - 5 - PADDLE_HEIGHT)
 	right_y += PADDLE_STEP;
 
       left_v *= 0.97;
@@ -136,13 +141,15 @@ int main()
       ball_x += ball_dx;
       ball_y += ball_dy;
 
-      if (ball_x + BALL > 458 - 5 - PADDLE_WIDTH)
+      if (ball_x + BALL > LD_SCREEN_WIDTH - 25 - PADDLE_WIDTH)
       {
-	if (ball_y >= right_y - 2 && ball_y + BALL <= right_y + PADDLE_HEIGHT + 2)
+	if (ball_y >= right_y - 2
+          && ball_y + BALL <= right_y + PADDLE_HEIGHT + 2)
 	{
 	  ball_dx = -ball_dx;
 	  ball_x += ball_dx;
-	  ball_dy += right_v * 0.1;
+	  ball_dy += right_v * 0.1 * EFFECT;
+	  ld_vibrate(ld, 0);
 	}
 	else
 	{
@@ -152,13 +159,15 @@ int main()
 	}
       }
 
-      if (ball_x < 19 + 5 + PADDLE_WIDTH)
+      if (ball_x < 25 + PADDLE_WIDTH)
       {
-	if (ball_y >= left_y - 2 && ball_y + BALL <= left_y + PADDLE_HEIGHT + 2)
+	if (ball_y >= left_y - 2
+          && ball_y + BALL <= left_y + PADDLE_HEIGHT + 2)
 	{
 	  ball_dx = -ball_dx;
 	  ball_x += ball_dx;
-	  ball_dy += left_v * 0.1;
+	  ball_dy += left_v * 0.1 * EFFECT;
+	  ld_vibrate(ld, 0);
 	}
 	else
 	{
@@ -172,30 +181,32 @@ int main()
       {
 	ball_dy = -ball_dy;
 	ball_y += ball_dy;
-	ball_dy *= 0.9;
+	ball_dy *= FRICTION;
       }
-      if (ball_y + BALL > 264)
+      if (ball_y + BALL > LD_SCREEN_HEIGHT - 5)
       {
 	ball_dy = -ball_dy;
 	ball_y += ball_dy;
-	ball_dy *= 0.9;
+	ball_dy *= FRICTION;
       }
 
       ld_send_image(ld, ball_x - BALL, ball_y - BALL,
 	ball->width, ball->height, ball->pixels);
-      ld_send_image(ld, 19 + 5, left_y - PADDLE_STEP,
+      ld_send_image(ld, 20, left_y - PADDLE_STEP,
 	paddle->width, paddle->height, paddle->pixels);
-      ld_send_image(ld, 458 - 5 - PADDLE_WIDTH, right_y - PADDLE_STEP,
+      ld_send_image(ld, LD_SCREEN_WIDTH - 20 - PADDLE_WIDTH,
+        right_y - PADDLE_STEP,
 	paddle->width, paddle->height, paddle->pixels);
       ld_update_screen(ld);
     }
 
+    image_t score;
   FIN:
-    image_t score = img_create(80, 20, 0, 0, 0);
+    score = img_create(80, 20, 0, 0, 0);
     char score_str[24]; // [8] if fine but gcc issues warnings
     sprintf(score_str, "%02d : %02d", left_n, right_n);
     img_print_text(score, 10, 5, score_str, red, green, blue);
-    ld_send_image(ld, 199, 110, score->width, score->height, score->pixels);
+    ld_send_image(ld, 180, 110, score->width, score->height, score->pixels);
     img_free(score);
     ld_update_screen(ld);
 

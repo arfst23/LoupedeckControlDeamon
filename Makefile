@@ -23,7 +23,23 @@ all: ldcd
 
 ################################################################################
 
+fb_demo: fb_demo.o fritzbox.o
+	$(REASON)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 ld_demo: ld_demo.o loupedeck.o image.o
+	$(REASON)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+in_demo: in_demo.o input.o
+	$(REASON)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+qd_demo: qd_demo.o querydbus.o
+	$(REASON)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+ppm2raw: ppm2raw.o image.o
 	$(REASON)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -31,15 +47,7 @@ pong: pong.o loupedeck.o image.o
 	$(REASON)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-fb_demo: fb_demo.o fritzbox.o
-	$(REASON)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-ppm2raw: ppm2raw.o image.o
-	$(REASON)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-ldcd: control.o loupedeck.o image.o fritzbox.o input.o querydbus.o
+ldcd: control.o loupedeck.o image.o fritzbox.o input.o command.o querydbus.o
 	$(REASON)
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -53,10 +61,10 @@ deps depend: *.h *.c
 	$(CC) -MM $(CPPFLAGS) *.c > deps
 
 clean:
-	$(RM) *.o
+	$(RM) *.o *~
 
 distclean: clean
-	$(RM) core deps tags *~
+	$(RM) core deps tags
 
 -include deps
 

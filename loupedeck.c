@@ -9,7 +9,7 @@
 #include "loupedeck.h"
 
 #define DEV_SERIAL "/dev/serial/by-id"
-#define LOUPEDECK "usb-Loupedeck"
+#define LOUPEDECK "Loupedeck_Live_S"
 
 static const char *ld_find_device(const char *pattern)
 {
@@ -21,7 +21,7 @@ static const char *ld_find_device(const char *pattern)
   static char device[18 + 63 + 20 + 1];
   for (struct dirent *ent; (ent = readdir(dir)); )
   {
-    if (strncmp(ent->d_name, LOUPEDECK, strlen(LOUPEDECK)))
+    if (!strstr(ent->d_name, LOUPEDECK))
       continue;
 
     if (pattern && !strstr(ent->d_name, pattern))

@@ -486,7 +486,9 @@ int fb_get_devices(fritzbox_t fb)
 	color = FB_WHITE_6500;
 	break;
       default:
-	assert(0);
+	// e.g. by sunset - replace with FB_WHITE_3000
+	color = FB_WHITE_3000;
+	break;
       }
     }
     
