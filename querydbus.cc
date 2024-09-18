@@ -1,5 +1,8 @@
+//******************************************************************************
+// Qt 6
+// following the program flow of qdbus(1) as in qdbus.cpp
+
 #include <QtCore/QCoreApplication>
-#include <QtCore/QRegExp>
 #include <QtCore/QStringList>
 #include <QtCore/qmetaobject.h>
 #include <QtXml/QDomDocument>
@@ -16,6 +19,8 @@
 extern "C" {
 #include "querydbus.h"
 }
+
+//******************************************************************************
  
 QT_BEGIN_NAMESPACE
 Q_DBUS_EXPORT extern bool qt_dbus_metaobject_skip_annotations;
@@ -64,26 +69,31 @@ static int qd_query_dbus(const char *service_str, const char *path_str,
 
   QList<QByteArray> types = meta_method.parameterTypes();
   assert(types.count() == 1);
-    
-  int type_id = QVariant::nameToType(types.at(0));
-  assert(type_id);
-  assert(type_id != QVariant::UserType);
-  assert(type_id != QVariant::List);
-  assert(type_id != QVariant::StringList);
-  assert(type_id != QVariant::Map);
-  assert(type_id < QMetaType::User);
+  assert(!types.at(0).endsWith('&'));
+
+  const QMetaType metaType = QMetaType::fromName(types.at(0));
+  assert(metaType.isValid());
+
+  const int meta_type_id = metaType.id();
+  assert(meta_type_id);
+  assert(meta_type_id != QMetaType::QVariantList);
+  assert(meta_type_id != QMetaType::QStringList);
+  assert(meta_type_id != QMetaType::QVariantMap);
+  assert(meta_type_id < QMetaType::User);
 
   QVariant param = argument;
-  param.convert(type_id);
-  assert(param.type() != QVariant::Invalid);
+  param.convert(metaType);
+  assert(param.isValid());
+
 
   QVariantList params;
   params += param;
 
   QDBusMessage reply = iface.callWithArgumentList(QDBus::Block, member, params);
-
   return reply.type() == QDBusMessage::ReplyMessage ? 0 : -1;
 }
+
+//******************************************************************************
 
 void qd_volume_up()
 {
@@ -192,3 +202,5 @@ void qd_center_mouse()
   int ret = qd_query_dbus("org.kde.kglobalaccel", "/component/kwin", "invokeShortcut", "MoveMouseToCenter");
   assert(ret >= 0);
 }
+
+//******************************************************************************
